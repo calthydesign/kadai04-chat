@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ねこ占いつきチャット</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-size: 1rem;
+      }
+      p {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+      }
+      img {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body class="relative">
+    <!-- コンテンツ表示画面 -->
+    <header>
+      <h1 class=""><img src="./img/logo.png" alt="logo" /></h1>
+    </header>
+    <div
+      class="flex align-center justify-center items-center bg-white z-50 fixed h-24 bottom-0 w-full magin-auto"
+    >
+      <div>NAME：<input type="text" id="uname" class="bg-slate-50 mr-8" /></div>
+      <div class="flex">
+        <textarea
+          id="text"
+          cols="50"
+          rows="1"
+          class="bg-slate-50 mr-8 md:mt-2 sm:mt-2"
+          placeholder="message"
+        ></textarea>
+        <br />
+        <button id="send">
+          <img
+            src="./img/send.png"
+            alt="send"
+            class="bg-green-500 w-12 h-12 p-2 rounded-lg"
+          />
+        </button>
+      </div>
+    </div>
+    <div>
+      <span id="uranai"></span>
+      <div
+        id="output"
+        style="overflow: auto"
+        class="flex-col justify-center"
+      ></div>
+    </div>
+
+    <!--/ コンテンツ表示画面 -->
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 以下Firebase -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        push,
+        set,
+        onChildAdded,
+        remove,
+        onChildRemoved,
+      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        //firebaseに接続するためのオブジェクト変数
+        apiKey: "AIzaSyDeFdVDmRQnigJlwdI1FFVPnx7HV2AsTOM",
+        authDomain: "sample-c4768.firebaseapp.com",
+        databaseURL: "https://sample-c4768-default-rtdb.firebaseio.com",
+        projectId: "sample-c4768",
+        storageBucket: "sample-c4768.appspot.com",
+        messagingSenderId: "131805254183",
+        appId: "1:131805254183:web:85024f84025f27a18a3402",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig); //このキーを持ってinitializeAppを実行する
+      const db = getDatabase(app); //RealtimeDatabaseに接続  getDatabaseはリアルタイムデータベースの取得
+      const dbRef = ref(db, "chat"); //どこの階層のデータを取得するかということ  RealtimeDBの"chat"をつかう
+
+      //投稿時間の取得,Bingに聞いた
+      function getCurrentTime() {
+        // ここで現在の時間を取得する処理を実装
+        let now = new Date();
+        const nowMon = now.getMonth() + 1;
+        const nowDate = now.getDate();
+        const nowHour = now.getHours();
+        const nowMinute = now.getMinutes();
+
+        return `${nowMon}/${nowDate} ${nowHour}:${nowMinute}`;
+      }
+
+      //送信
+      $("#send").on("click", function () {
+        const msg = {
+          uname: $("#uname").val(),
+          text: $("#text").val(),
+          //ここに取得した時間を追加してfirebaseにも保存する
+          time: getCurrentTime(), // Bingに聞いてみた
+          uranai: uranai(),
+        };
+        const newPostRef = push(dbRef); //ユニークキーを生成する。"chat"に入っているデータであるdbRefという変数をpush(入れる)
+        set(newPostRef, msg); //ユニークキーとメッセージ両方をセットする
+      });
+
+      onChildAdded(dbRef, function (data) {
+        const msg = data.val(); //dataからデータを取ってくるFirebaseの関数
+        const key = data.key; //ユニークキー
+        //表示用テキスト・HTMLを作成
+        let h = "<p>";
+        h += msg.uranai;
+        h += msg.uname;
+        h += "<br>";
+        h += msg.text;
+        h += "<br>";
+        h += msg.time;
+        h += "</p>";
+        $("#output").prepend(h);
+      });
+      //占い
+      //クリックイベント
+      $("#send").on("click", function () {
+        //結果表示
+        $("#uranai").html(view);
+      });
+
+      function uranai() {
+        //ランダム関数
+        const r = Math.ceil(Math.random() * 5);
+        //条件分岐
+        let view = "";
+        if (r === 1) {
+          view = '<img src="./img/excellentluck.png" alt="大吉">';
+        } else if (r === 2) {
+          view = '<img src="./img/goodluck.png" alt="中吉">';
+        } else if (r === 3) {
+          view = '<img src="./img/goodluck.png" alt="小吉">';
+        } else if (r === 4) {
+          view = '<img src="./img/slightlygoodluck.png" alt="吉">';
+        } else if (r === 5) {
+          view = '<img src="./img/badluck.png" alt="凶">';
+        }
+        return `${view}`;
+      }
+    </script>
+  </body>
+</html>
