@@ -12,11 +12,11 @@
       p {
         text-align: center;
         padding-bottom: 20px;
-        border-bottom: 1px solid #eee;
       }
       img {
         display: block;
         margin: 0 auto;
+        box-sizing: border-box;
       }
     </style>
   </head>
@@ -26,7 +26,7 @@
       <h1 class=""><img src="./img/logo.png" alt="logo" /></h1>
     </header>
     <div
-      class="flex align-center justify-center items-center bg-white z-50 fixed h-24 bottom-0 w-full magin-auto"
+      class="flex align-center justify-center items-center bg-white z-50 fixed h-24 bottom-0 w-full w-8/12 mx-auto"
     >
       <div>NAME：<input type="text" id="uname" class="bg-slate-50 mr-8" /></div>
       <div class="flex">
@@ -48,11 +48,10 @@
       </div>
     </div>
     <div>
-      <span id="uranai"></span>
       <div
         id="output"
         style="overflow: auto"
-        class="flex-col justify-center"
+        class="flex-col justify-center mb-28"
       ></div>
     </div>
 
@@ -79,7 +78,6 @@
       // Your web app's Firebase configuration
       const firebaseConfig = {
         //firebaseに接続するためのオブジェクト変数
-        
       };
 
       // Initialize Firebase
@@ -98,6 +96,28 @@
 
         return `${nowMon}/${nowDate} ${nowHour}:${nowMinute}`;
       }
+      //占い
+      function uranai() {
+        //ランダム関数
+        const r = Math.ceil(Math.random() * 5);
+        //条件分岐
+        let view = "";
+        if (r === 1) {
+          view =
+            '<img src="./img/excellentluck.png" alt="大吉" style="margin: 0 40px;">';
+        } else if (r === 2) {
+          view = '<img src="./img/goodluck.png" alt="中吉">';
+        } else if (r === 3) {
+          view =
+            '<img src="./img/goodluck.png" alt="小吉"  style="margin: 0 40px;">';
+        } else if (r === 4) {
+          view =
+            '<img src="./img/slightlygoodluck.png" alt="吉"  style="margin: 0 40px;">';
+        } else if (r === 5) {
+          view = '<img src="./img/badluck.png" alt="凶">';
+        }
+        return `${view}`;
+      }
 
       //送信
       $("#send").on("click", function () {
@@ -112,45 +132,40 @@
         set(newPostRef, msg); //ユニークキーとメッセージ両方をセットする
       });
 
+      //テンプレートリテラル
+      const p = '<p class="flex items-center justify-between w-2/4 text-left">';
+      const pEnd = "</p>";
+      const br = "<br>";
+      const div = "<div>";
+      const divFlex =
+        '<div class="flex mx-auto w-6/12 border-b-2 border-slate-50"">';
+      const divEnd = "</div>";
+      const span = '<span class="text-xs  ml-4">';
+      const spanEnd = "</span>";
+      const spanName = '<span class="text-sm font-bold mb-4">';
+
       onChildAdded(dbRef, function (data) {
         const msg = data.val(); //dataからデータを取ってくるFirebaseの関数
         const key = data.key; //ユニークキー
         //表示用テキスト・HTMLを作成
-        let h = "<p>";
-        h += msg.uranai;
-        h += msg.uname;
-        h += "<br>";
-        h += msg.text;
-        h += "<br>";
-        h += msg.time;
-        h += "</p>";
+        let h = `${divFlex}${msg.uranai}${p}${msg.uname}${br}${msg.text}${br}${span}${msg.time}${spanEnd}${pEnd}${divEnd}`;
         $("#output").prepend(h);
       });
-      //占い
-      //クリックイベント
-      $("#send").on("click", function () {
-        //結果表示
-        $("#uranai").html(view);
-      });
 
-      function uranai() {
-        //ランダム関数
-        const r = Math.ceil(Math.random() * 5);
-        //条件分岐
-        let view = "";
-        if (r === 1) {
-          view = '<img src="./img/excellentluck.png" alt="大吉">';
-        } else if (r === 2) {
-          view = '<img src="./img/goodluck.png" alt="中吉">';
-        } else if (r === 3) {
-          view = '<img src="./img/goodluck.png" alt="小吉">';
-        } else if (r === 4) {
-          view = '<img src="./img/slightlygoodluck.png" alt="吉">';
-        } else if (r === 5) {
-          view = '<img src="./img/badluck.png" alt="凶">';
-        }
-        return `${view}`;
-      }
+      // onChildAdded(dbRef, function (data) {
+      //   const msg = data.val(); //dataからデータを取ってくるFirebaseの関数
+      //   const key = data.key; //ユニークキー
+      //   //表示用テキスト・HTMLを作成
+      //   let h = "<p>";
+      //   h += msg.uranai;
+      //   h += msg.uname;
+      //   h += "<br>";
+      //   h += msg.text;
+      //   h += "<br>";
+      //   h += msg.time;
+      //   h += "</p>";
+      //   $("#output").prepend(h);
+      // });
     </script>
   </body>
 </html>
