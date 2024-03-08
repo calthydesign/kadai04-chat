@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ねこ占いつきチャット</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-size: 1rem;
+      }
+      p {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+      }
+      img {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body class="relative">
+    <!-- コンテンツ表示画面 -->
+    <header>
+      <h1 class=""><img src="./img/logo.png" alt="logo" /></h1>
+    </header>
+    <div
+      class="flex align-center justify-center items-center bg-white z-50 fixed h-24 bottom-0 w-full magin-auto"
+    >
+      <div>NAME：<input type="text" id="uname" class="bg-slate-50 mr-8" /></div>
+      <div class="flex">
+        <textarea
+          id="text"
+          cols="50"
+          rows="1"
+          class="bg-slate-50 mr-8 md:mt-2 sm:mt-2"
+          placeholder="message"
+        ></textarea>
+        <br />
+        <button id="send">
+          <img
+            src="./img/send.png"
+            alt="send"
+            class="bg-green-500 w-12 h-12 p-2 rounded-lg"
+          />
+        </button>
+      </div>
+    </div>
+    <div>
+      <span id="uranai"></span>
+      <div
+        id="output"
+        style="overflow: auto"
+        class="flex-col justify-center"
+      ></div>
+    </div>
+
+    <!--/ コンテンツ表示画面 -->
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 以下Firebase -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        push,
+        set,
+        update,
+        onChildAdded,
+        onChildChanged,
+        remove,
+        onChildRemoved,
+      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        //firebaseに接続するためのオブジェクト変数
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig); //このキーを持ってinitializeAppを実行する
+      const db = getDatabase(app); //RealtimeDatabaseに接続  getDatabaseはリアルタイムデータベースの取得
+      const dbRef = ref(db, "chat"); //どこの階層のデータを取得するかということ  RealtimeDBの"chat"をつかう
+
+      //投稿時間の取得,Bingに聞いた
+      function getCurrentTime() {
+        // ここで現在の時間を取得する処理を実装
+        let now = new Date();
+        const nowMon = now.getMonth() + 1;
+        const nowDate = now.getDate();
+        const nowHour = now.getHours();
+        const nowMinute = now.getMinutes();
+
+        return `${nowMon}/${nowDate} ${nowHour}:${nowMinute}`;
+      }
+
+      //送信
+      $("#send").on("click", function () {
+        const msg = {
+          uname: $("#uname").val(),
+          text: $("#text").val(),
+          //ここに取得した時間を追加してfirebaseにも保存する
+          time: getCurrentTime(), // Bingに聞いてみた
+          uranai: uranai(),
+        };
+        const newPostRef = push(dbRef); //ユニークキーを生成する。"chat"に入っているデータであるdbRefという変数をpush(入れる)
+        set(newPostRef, msg); //ユニークキーとメッセージ両方をセットする
+      });
+
+      onChildAdded(dbRef, function (data) {
+        const msg = data.val(); //dataからデータを取ってくるFirebaseの関数
+        const key = data.key; //ユニークキー
+        //表示用テキスト・HTMLを作成
+        let h = '<p id="' + key + '">';
+        h += msg.uranai;
+        h += msg.uname;
+        h += "<br>";
+        h +=
+          '<span contentEditable = "true" id="' +
+          key +
+          '_update">' +
+          msg.text +
+          "</span>";
+        h += "<br>";
+        h += msg.time;
+        h += '<span class="remove" data-key"' + key + '">🚮</span>';
+        h += '<span class="update" data-key"' + key + '">🆙</span>';
+        h += "</p>";
+        $("#output").prepend(h);
+      });
+
+      //削除イベント
+      $("#output").on("click", ".remove", function () {
+        //removeのクラスを監視させたい
+        const key = $(this).attr("data-key"); //attrはattribute。thisは押した場所だけ見るようになる
+        const remove_item = ref(db, "chat/" + key); //refという関数
+        remove(remove_item); //Firebaseデータ削除関数
+      });
+      //更新イベント
+      $("#output").on("click", ".update", function () {
+        const key = $(this).attr("data-key");
+        update(ref(db, "chat/" + key)),
+          {
+            text: $("#" + key + "_update").html(),
+          };
+      });
+
+      //削除処理がFirebase側で実行されたらイベント発生
+      onChildRemoved(dbRef, (data) => {
+        $("#", +data.key).remove(); //DOM操作関数（対象を削除）
+      });
+
+      //更新処理がFirebase側で実行されたらイベント発生
+      onChildChanged(dbRef, (data) => {
+        $("#" + data.key + "_update").html(data.val().text);
+        $("#" + data.key + "_update")
+          .fadeOut(800)
+          .fadeIn(800);
+      });
+
+      //占い
+      function uranai() {
+        //ランダム関数
+        const r = Math.ceil(Math.random() * 5);
+        //条件分岐
+        let view = "";
+        if (r === 1) {
+          view = '<img src="./img/excellentluck.png" alt="大吉">';
+        } else if (r === 2) {
+          view = '<img src="./img/goodluck.png" alt="中吉">';
+        } else if (r === 3) {
+          view = '<img src="./img/goodluck.png" alt="小吉">';
+        } else if (r === 4) {
+          view = '<img src="./img/slightlygoodluck.png" alt="吉">';
+        } else if (r === 5) {
+          view = '<img src="./img/badluck.png" alt="凶">';
+        }
+        return `${view}`;
+      }
+    </script>
+  </body>
+</html>
